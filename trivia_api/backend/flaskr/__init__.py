@@ -9,7 +9,6 @@ from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
 
-
 def paginate(request, selection):
   page = request.args.get('page', 1, type=int)
   start = (page - 1) * QUESTIONS_PER_PAGE 
@@ -57,9 +56,11 @@ def create_app(test_config=None):
   def retrieve_questions():
     selection = Question.query.order_by('id').all()
     current_questions = paginate(request, selection)
-    #################does this return dictionary or list
-    categories = Question.query.with_entities(Question.category).order_by(Question.category).all()
+    categories = Category.query.with_entities(Category.type).all()
     
+    for record in categories:
+      categories_list = {'categories_list': record[0]}
+
     if len(current_questions) == 0:
       abort(404)
 
@@ -67,10 +68,30 @@ def create_app(test_config=None):
       'success': True,
       'questions': current_questions,
       'total_questions': len(current_questions),
-      'categories': categories,
+      'categories': categories_list,
       'current_category': None
     })
       
+
+  @app.route("/try")
+  def trying():
+    selection = Question.query.order_by('id').all()
+    current_questions = paginate(request, selection)
+    categories = Category.query.with_entities(Category.type).all()
+    
+    '''for record in categories:
+      categories_list = {'categories_list': record[0]}
+
+    if len(current_questions) == 0:
+      abort(404)
+'''
+    return jsonify({
+      'success': True,
+      'questions': current_questions,
+      'total_questions': len(current_questions),
+      'categories': categories,
+      'current_category': None
+    })
   '''
   @TODO: 
   Create an endpoint to handle GET requests for questions, 
@@ -102,7 +123,6 @@ def create_app(test_config=None):
         'questions': current_questions,
         'total_questions': len(selection)
       })
-
     except: 
       abort(422)
   '''
@@ -129,7 +149,7 @@ def create_app(test_config=None):
 
       return jsonify({
         'success': True,
-        'posted': new_question,
+        'posted': new_question.format(),
         'questions': current_questions,
         'total_questions': len(selection)
       })
@@ -182,7 +202,7 @@ def create_app(test_config=None):
     
     if len(current_questions) == 0:
       abort(404)
-
+ 
     return jsonify({
       'success': True,
       'questions': current_questions,
