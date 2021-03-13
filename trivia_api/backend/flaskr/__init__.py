@@ -44,10 +44,14 @@ def create_app(test_config=None):
   def retrieve_categories():
     records = Category.query.order_by(Category.id).all()
     categories_list = [record.format() for record in records]
-
+    
+    categories = {}
+    for category in categories_list:
+      categories['{}'.format(category['id'])] = '{}'.format(category['type'])
+    
     return jsonify({
       'success' : True,
-      'categories' : categories_list,
+      'categories' : categories,
       'number_of_categories' : len(records)
     })
   
@@ -56,10 +60,12 @@ def create_app(test_config=None):
   def retrieve_questions():
     selection = Question.query.order_by('id').all()
     current_questions = paginate(request, selection)
-    categories = Category.query.with_entities(Category.type).all()
+    records = Category.query.order_by(Category.id).all()
+    categories_list = [record.format() for record in records]
     
-    for record in categories:
-      categories_list = {'categories_list': record[0]}
+    categories = {}
+    for category in categories_list:
+      categories['{}'.format(category['id'])] = '{}'.format(category['type'])
 
     if len(current_questions) == 0:
       abort(404)
@@ -68,7 +74,7 @@ def create_app(test_config=None):
       'success': True,
       'questions': current_questions,
       'total_questions': len(current_questions),
-      'categories': categories_list,
+      'categories': categories,
       'current_category': None
     })
       
@@ -79,18 +85,22 @@ def create_app(test_config=None):
     current_questions = paginate(request, selection)
     categories = Category.query.with_entities(Category.type).all()
     
-    '''for record in categories:
-      categories_list = {'categories_list': record[0]}
-
+    i = 0
+    categories_list = [None] * len(categories)
+    while i < len(categories):
+      categories_list[i]=categories[i][0]
+      i+=1
+    
     if len(current_questions) == 0:
       abort(404)
-'''
+
     return jsonify({
       'success': True,
-      'questions': current_questions,
-      'total_questions': len(current_questions),
-      'categories': categories,
-      'current_category': None
+      #'questions': current_questions,
+      #'total_questions': len(current_questions),
+      'categories': categories_list,
+      'hey': categories[1][0]
+      #'current_category': None
     })
   '''
   @TODO: 
@@ -138,11 +148,11 @@ def create_app(test_config=None):
     question = body.get('question', None)
     answer = body.get('answer', None)
     difficulty = body.get('difficulty', None)
-    category = body.get('category', None)
+    category_id = body.get('category', None)
     
     try:
       new_question = Question(question = question, answer = answer,
-                              difficulty = difficulty, category = category)
+                              difficulty = difficulty, category_id = category_id)
       new_question.insert()
       selection = Question.query.order_by('id').all()
       current_questions = paginate(request, selection)
@@ -197,7 +207,23 @@ def create_app(test_config=None):
   '''
   @app.route("/categories/<int:category_id>/questions")
   def retrieve_questions_by_category(category_id):
-    selection = Question.query.filter(Question.category == category_id).order_by('id').all()
+    selection = Question.query.filter(Question.category_id == category_id).order_by('id').all()
+    current_questions = paginate(request, selection)
+    
+    if len(current_questions) == 0:
+      abort(404)
+ 
+    return jsonify({
+      'success': True,
+      'questions': current_questions,
+      'total_questions': len(selection),
+      'current_category': category_id
+    })
+
+  
+  @app.route("/categories/<category_type>/questions")
+  def retrieve_questions_by_category_type(category_id):
+    selection = Question.query.filter(Question.category_id == category_id).order_by('id').all()
     current_questions = paginate(request, selection)
     
     if len(current_questions) == 0:
