@@ -79,29 +79,6 @@ def create_app(test_config=None):
     })
       
 
-  @app.route("/try")
-  def trying():
-    selection = Question.query.order_by('id').all()
-    current_questions = paginate(request, selection)
-    categories = Category.query.with_entities(Category.type).all()
-    
-    i = 0
-    categories_list = [None] * len(categories)
-    while i < len(categories):
-      categories_list[i]=categories[i][0]
-      i+=1
-    
-    if len(current_questions) == 0:
-      abort(404)
-
-    return jsonify({
-      'success': True,
-      #'questions': current_questions,
-      #'total_questions': len(current_questions),
-      'categories': categories_list,
-      'hey': categories[1][0]
-      #'current_category': None
-    })
   '''
   @TODO: 
   Create an endpoint to handle GET requests for questions, 
@@ -117,12 +94,12 @@ def create_app(test_config=None):
 
   @app.route('/questions/<int:question_id>', methods = ['DELETE'])
   def delete_question(question_id):
-    try:
-      question = Question.query.filter(Question.id == question_id).one_or_none()
+    question = Question.query.filter(Question.id == question_id).one_or_none()
 
-      if question is None:
+    if question is None:
         abort(404)
-      
+
+    try:
       question.delete()
       selection = Question.query.order_by('id').all()
       current_questions = paginate(request, selection)
@@ -145,12 +122,13 @@ def create_app(test_config=None):
   @app.route('/questions', methods = ['POST'])
   def create_questions():
     body = request.get_json()
-    question = body.get('question', None)
-    answer = body.get('answer', None)
-    difficulty = body.get('difficulty', None)
-    category_id = body.get('category', None)
     
     try:
+      question = body.get('question')
+      answer = body.get('answer')
+      difficulty = body.get('difficulty')
+      category_id = body.get('category')
+
       new_question = Question(question = question, answer = answer,
                               difficulty = difficulty, category_id = category_id)
       new_question.insert()
@@ -179,8 +157,9 @@ def create_app(test_config=None):
   @app.route('/search_questions', methods = ['POST'])
   def search_questions():
     body = request.get_json()
-    search_term = body.get('search_term')
+    
     try:
+      search_term = body.get('search_term')
       search = '%{}%'.format(search_term)
       selection = Question.query.filter(Question.question.ilike(search)).order_by('id').all()
       current_questions = paginate(request, selection)
@@ -206,13 +185,13 @@ def create_app(test_config=None):
   Try using the word "title" to start. 
   '''
   @app.route("/categories/<int:category_id>/questions")
-  def retrieve_questions_by_category(category_id):
+  def retrieve_questions_by_category_id(category_id):
     selection = Question.query.filter(Question.category_id == category_id).order_by('id').all()
     current_questions = paginate(request, selection)
     
     if len(current_questions) == 0:
       abort(404)
- 
+
     return jsonify({
       'success': True,
       'questions': current_questions,
@@ -228,7 +207,7 @@ def create_app(test_config=None):
     
     if len(current_questions) == 0:
       abort(404)
- 
+
     return jsonify({
       'success': True,
       'questions': current_questions,
@@ -250,23 +229,27 @@ def create_app(test_config=None):
     quiz_category = body.get('quiz_category', None)
 
     if quiz_category:
-      questions = Question.query.filter(Question.category == quiz_category).all()
+      questions = Question.query.filter(Question.category_id == quiz_category).all()
     else:
       questions = Question.query.all()
 
     if len(questions) == 0:
       abort(404)
+    
+    questions_list = [question.format() for question in questions]
 
-    x = True
-    while(x):
-      random_question = random.choice(questions)
-      if random_question not in previous_questions:
-        x = False
-        return jsonify({
-          'success': True,
-          'question': random_question.format(),
-          'play_category': quiz_category
-        })
+    for previous_question in previous_questions:
+      for question in questions_list:
+        if previous_question['id'] == question['id']:
+          questions_list.remove(question)
+    
+    random_question = random.choice(questions_list)
+      
+    return jsonify({
+        'success': True,
+        'question': random_question,
+        'play_category': quiz_category
+    })
 
 
   '''
