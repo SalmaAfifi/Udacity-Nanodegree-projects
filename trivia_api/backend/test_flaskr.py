@@ -138,7 +138,7 @@ class TriviaTestCase(unittest.TestCase):
         }
         res = self.client().get('/quizzes', json = message)
         data = json.loads(res.data)
-        required_question = db.session.query(Question).filter(Question.id == 23).first().format()
+        required_question = db.session.query(Question).filter(Question.id == 19).first().format()
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
