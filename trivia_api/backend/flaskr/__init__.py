@@ -56,7 +56,7 @@ def create_app(test_config=None):
     })
   
 
-  @app.route("/questions")
+  @app.route("/questions", methods = ["GET"])
   def retrieve_questions():
     selection = Question.query.order_by('id').all()
     current_questions = paginate(request, selection)
@@ -73,7 +73,7 @@ def create_app(test_config=None):
     return jsonify({
       'success': True,
       'questions': current_questions,
-      'total_questions': len(current_questions),
+      'total_questions': len(selection),
       'categories': categories,
       'current_category': None
     })
@@ -102,12 +102,10 @@ def create_app(test_config=None):
     try:
       question.delete()
       selection = Question.query.order_by('id').all()
-      current_questions = paginate(request, selection)
 
       return jsonify({
         'success': True,
         'deleted_question': question_id,
-        'questions': current_questions,
         'total_questions': len(selection)
       })
     except: 
@@ -133,12 +131,10 @@ def create_app(test_config=None):
                               difficulty = difficulty, category_id = category_id)
       new_question.insert()
       selection = Question.query.order_by('id').all()
-      current_questions = paginate(request, selection)
 
       return jsonify({
         'success': True,
         'posted': new_question.format(),
-        'questions': current_questions,
         'total_questions': len(selection)
       })
   
@@ -184,7 +180,7 @@ def create_app(test_config=None):
   only question that include that string within their question. 
   Try using the word "title" to start. 
   '''
-  @app.route("/categories/<int:category_id>/questions")
+  @app.route("/categories/<int:category_id>/questions", methods = ['GET'])
   def retrieve_questions_by_category_id(category_id):
     selection = Question.query.filter(Question.category_id == category_id).order_by('id').all()
     current_questions = paginate(request, selection)
@@ -200,20 +196,6 @@ def create_app(test_config=None):
     })
 
   
-  @app.route("/categories/<category_type>/questions")
-  def retrieve_questions_by_category_type(category_id):
-    selection = Question.query.filter(Question.category_id == category_id).order_by('id').all()
-    current_questions = paginate(request, selection)
-    
-    if len(current_questions) == 0:
-      abort(404)
-
-    return jsonify({
-      'success': True,
-      'questions': current_questions,
-      'total_questions': len(selection),
-      'current_category': category_id
-    })
   '''
   @TODO: 
   Create a GET endpoint to get questions based on category. 
@@ -225,31 +207,35 @@ def create_app(test_config=None):
   @app.route('/quizzes', methods = ['POST'])
   def quiz():
     body = request.get_json()
-    previous_questions = body.get('previous_questions')
-    quiz_category = body.get('quiz_category', None)
-
-    if quiz_category:
-      questions = Question.query.filter(Question.category_id == quiz_category).all()
-    else:
-      questions = Question.query.all()
-
-    if len(questions) == 0:
-      abort(404)
     
-    questions_list = [question.format() for question in questions]
+    try:
+      previous_questions = body.get('previous_questions')
+      quiz_category = body.get('quiz_category', None)
 
-    for previous_question in previous_questions:
-      for question in questions_list:
-        if previous_question['id'] == question['id']:
-          questions_list.remove(question)
-    
-    random_question = random.choice(questions_list)
+      if quiz_category:
+        questions = Question.query.filter(Question.category_id == quiz_category).all()
+      else:
+        questions = Question.query.all()
+
+      if len(questions) == 0:
+        abort(404)
       
-    return jsonify({
-        'success': True,
-        'question': random_question,
-        'play_category': quiz_category
-    })
+      questions_list = [question.format() for question in questions]
+
+      for previous_question in previous_questions:
+        for question in questions_list:
+          if previous_question['id'] == question['id']:
+            questions_list.remove(question)
+      
+      random_question = random.choice(questions_list)
+        
+      return jsonify({
+          'success': True,
+          'question': random_question,
+          'play_category': quiz_category
+      })
+    except:
+      abort(422)
 
 
   '''
@@ -268,7 +254,7 @@ def create_app(test_config=None):
         return jsonify({
             "success": False, 
             "error": 400,
-            "message": "bad request :("
+            "message": "Bad request :("
         }), 400
 
 
@@ -277,7 +263,7 @@ def create_app(test_config=None):
         return jsonify({
             "success": False, 
             "error": 404,
-            "message": "Sorry, couldn't find a resource matching your request.\nPlease check the URL and the parameters if entered"
+            "message": "Sorry, couldn't find a resource matching your request :("
         }), 404
 
 
@@ -286,8 +272,17 @@ def create_app(test_config=None):
         return jsonify({
             "success": False, 
             "error": 422,
-            "message": "Sorry, couldn't process your request. Please make sure\nyou have the credentials for such a reuest or try again later"
+            "message": "Sorry, couldn't process your request :("
         }), 422
+
+    
+  @app.errorhandler(500)
+  def not_allowed(error):
+        return jsonify({
+            "success": False, 
+            "error": 500,
+            "message": "Method not allowed"
+        }), 500
 
   '''
   @TODO: 

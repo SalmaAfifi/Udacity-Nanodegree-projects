@@ -60,7 +60,7 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data['success'], False)
-        self.assertEqual(data['message'], "Sorry, couldn't find a resource matching your request.\nPlease check the URL and the parameters if entered")
+        self.assertEqual(data['message'], "Sorry, couldn't find a resource matching your request :(")
     
 
     #route('/search_questions', methods = ['POST'])
@@ -82,14 +82,13 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 422)
         self.assertEqual(data['success'], False)
-        self.assertEqual(data['message'], "Sorry, couldn't process your request. Please make sure\nyou have the credentials for such a reuest or try again later")
+        self.assertEqual(data['message'], "Sorry, couldn't process your request :(")
 
     #route("/categories/<int:category_id>/questions")
     def test_get_questions_by_category(self):
         res = self.client().get('/categories/1/questions')
         data = json.loads(res.data)
         selection = Question.query.filter(Question.category_id == 1).order_by('id').all()
-        questions_list = [question.format() for question in selection]
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
@@ -104,15 +103,24 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data['success'], False)
-        self.assertEqual(data['message'], "Sorry, couldn't find a resource matching your request.\nPlease check the URL and the parameters if entered")
+        self.assertEqual(data['message'], "Sorry, couldn't find a resource matching your request :(")
 
     #route('/quizzes', methods = ['POST'])
     def test_play_quiz(self):
         #assuming previous_questions are all questions in the db except one
-        previous_questions = db.session.query(Question).order_by(Question.id).limit(18).all()
-        previous_questions_list = [question.format() for question in previous_questions]
-        message ={
-            'previous_questions': previous_questions_list,
+        message ={'previous_questions': [
+            {"question": "How old is the Earth",
+            "answer": "4.543 billion years",
+            "difficulty": 4,
+            "category": 1,
+            "id":20 
+            },
+            {"answer": "Maya Angelou", 
+            "category": 4, 
+            "difficulty": 2, 
+            "id": 5, 
+            "question": "Whose autobiography is entitled I Know Why the Caged Bird Sings"
+            }],
             'quiz_category': 4
         }
         res = self.client().post('/quizzes', json = message)
@@ -120,7 +128,7 @@ class TriviaTestCase(unittest.TestCase):
         
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
-        self.assertEqual(data['question']['id'], 20)
+        self.assertTrue(data['question'])
         self.assertEqual(data['play_category'], 4)
 
 
@@ -134,7 +142,7 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data['success'], False)
-        self.assertEqual(data['message'], "Sorry, couldn't find a resource matching your request.\nPlease check the URL and the parameters if entered")
+        self.assertEqual(data['message'], "Sorry, couldn't find a resource matching your request :(")
 
 
     #route('/questions', methods = ['POST'])
@@ -145,7 +153,6 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
         self.assertTrue(data['posted'])
-        self.assertTrue(len(data['questions']))
         self.assertTrue(data['total_questions'])
     
 
@@ -155,18 +162,17 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 422)
         self.assertEqual(data['success'], False)
-        self.assertEqual(data['message'], "Sorry, couldn't process your request. Please make sure\nyou have the credentials for such a reuest or try again later")
+        self.assertEqual(data['message'], "Sorry, couldn't process your request :(")
 
 
     #route('/questions/<int:question_id>', methods = ['DELETE'])
     def test_delete_question(self):
-        res = self.client().delete('/questions/11')
+        res = self.client().delete('/questions/16')
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
-        self.assertEqual(data['deleted_question'],11)
-        self.assertTrue(len(data['questions']))
+        self.assertEqual(data['deleted_question'],16)
         self.assertTrue(data['total_questions'])
     
 
@@ -176,7 +182,7 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data['success'], False)
-        self.assertEqual(data['message'], "Sorry, couldn't find a resource matching your request.\nPlease check the URL and the parameters if entered")
+        self.assertEqual(data['message'], "Sorry, couldn't find a resource matching your request :(")
 #Make the tests conveniently executable
 if __name__ == "__main__":
     unittest.main()
