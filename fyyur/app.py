@@ -215,6 +215,26 @@ def edit_artist(artist_id):
   # TODO: populate form with fields from artist with ID <artist_id>
   return render_template('forms/edit_artist.html', form=form, artist=artist)
 
+
+""" 
+1) user.no_of_logins += 1
+   session.commit()
+
+2) session.query().\
+       filter(User.username == form.username.data).\
+       update({"no_of_logins": (User.no_of_logins +1)})
+   session.commit()
+
+3) conn = engine.connect()
+   stmt = User.update().\
+       values(no_of_logins=(User.no_of_logins + 1)).\
+       where(User.username == form.username.data)
+   conn.execute(stmt)
+
+4) setattr(user, 'no_of_logins', user.no_of_logins+1)
+   session.commit()
+"""
+
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
   # TODO: take values from the form submitted, and update existing
